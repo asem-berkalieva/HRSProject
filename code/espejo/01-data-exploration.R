@@ -107,7 +107,7 @@ for (k in 1:length(data_files)) {
   file_info[[k]] <- list(master=master,
                          sub=sub,
                          df=df,
-                         n=length(indices))
+                         n=nrow(df))
 }
 
 t1 <- Sys.time()
@@ -116,7 +116,8 @@ elapsed <- t1-t0
 
 # SUMMARY TABLE
 summary_df <- data.frame(do.call(rbind, lapply(file_info, `[`, c(1,2,4))))
-
+summary_df <- apply(summary_df, 2, as.character)
+write.csv(summary_df, '../../output-tables/summary-df.csv', row.names=FALSE)
 
 # ALL COL NAMES
 all_col_names <- lapply(1:length(file_info), function(k) {
