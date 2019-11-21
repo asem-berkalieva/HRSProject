@@ -1,7 +1,7 @@
 # LAST UPDATED
 # 2019-11-20
 
-fwf_to_df <- function(data_file, dict_file, return_time=FALSE) {
+fwf_to_df <- function(this_data, this_dict, return_time=FALSE) {
   if (return_time) {
     t0 <- Sys.time()
   }
