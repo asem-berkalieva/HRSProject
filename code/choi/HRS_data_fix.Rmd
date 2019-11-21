@@ -1,0 +1,335 @@
+---
+title: "HRS data"
+author: "Moon Choi"
+date: "9/27/2018"
+output: html_document
+---
+
+```{r}
+
+rm(list = ls())
+
+library("foreign")
+library("readr")
+library("Hmisc")
+library("dplyr")
+
+# set global options
+knitr::opts_chunk$set(fig.width=4, fig.height=4,
+                     warning=FALSE, message=FALSE,
+                     collapse=FALSE, cache = F)
+
+setwd("~/Box Sync/3 - FA18/252E/Group project/RAND files/")
+
+```
+
+
+```{r}
+# read in dta's ----------------------------------------------------------------
+
+hrs2010 <- read.dta(paste0("~/Box Sync/3 - FA18/252E/Group project/", 
+                           "RAND files/hd10f5e_STATA/hd10f5e.dta"))
+hrs2012 <- read.dta(paste0("~/Box Sync/3 - FA18/252E/Group project/", 
+                           "RAND files/h12f2a_STATA/h12f2a.dta"))
+hrs2014 <- read.dta(paste0("~/Box Sync/3 - FA18/252E/Group project/", 
+                           "RAND files/h14f2a_STATA/h14f2a.dta"))
+
+# read in 2016 .da files -------------------------------------------------------
+
+# setting file path to raw .da data files
+path <- "~/Box Sync/3 - FA18/252E/Group project/RAND files/h16da/"
+hrs2016c.file <- file.path(path, "H16C_R.da")
+hrs2016d.file <- file.path(path, "H16D_R.da")
+
+# setting file path to .dct file
+hrs2016c.dict.file <- "~/Box Sync/3 - FA18/252E/Group project/RAND files/h16sta/H16C_R.dct"
+hrs2016d.dict.file <- "~/Box Sync/3 - FA18/252E/Group project/RAND files/h16sta/H16D_R.dct"
+#hrs2016c.dict.file <- file.path(path1, "H16C_R.dct")
+#hrs2016d.dict.file <- file.path(path2, "H16D_R.dct")
+
+# reading in dictionary file -- not sure that this did anything for us :(
+df.dict.c <- read.table(hrs2016c.dict.file, 
+                      skip = 2, fill = T, stringsAsFactors = FALSE)
+df.dict.d <- read.table(hrs2016d.dict.file, 
+                      skip = 2, fill = T, stringsAsFactors = FALSE)
+colnames(df.dict.c) <- colnames(df.dict.d) <- 
+    c("col.num", "col.type", "col.name", "col.width", "col.lbl")
+
+# remove last row which only contains a closing }
+df.dict.c <- df.dict.c[-nrow(df.dict.c), ]
+df.dict.d <- df.dict.d[-nrow(df.dict.d), ]
+
+# extract a numeric value from column width field
+df.dict.c$col.width <- as.integer(sapply(df.dict.c$col.width, gsub, 
+                                       pattern = "[^0-9\\.]", replacement = ""))
+df.dict.d$col.width <- as.integer(sapply(df.dict.d$col.width, gsub, 
+                                       pattern = "[^0-9\\.]", replacement = ""))
+
+# convert column type sto format to be used with read_fwf function
+df.dict.c$col.type <- sapply(df.dict.c$col.type, 
+                  function(x) {
+                      ifelse(x %in% c("int", "byte", "long"), "i",
+                             ifelse(x == "float", "n", 
+                                    ifelse(x == "double", "d", "c")))})
+df.dict.d$col.type <- sapply(df.dict.d$col.type, 
+                  function(x) {
+                      ifelse(x %in% c("int", "byte", "long"), "i",
+                             ifelse(x == "float", "n", 
+                                    ifelse(x == "double", "d", "c")))})
+
+# read the data file into a dataframe 
+hrs2016c <- read_fwf(file = "~/Box Sync/3 - FA18/252E/Group project/RAND files/h16da/H16C_R.da", 
+                     fwf_widths(widths = df.dict.c$col.width, 
+                                col_names = df.dict.c$col.name), 
+                     col_types = paste(df.dict.c$col.type, collapse = ""))
+hrs2016d <- read_fwf(file = "~/Box Sync/3 - FA18/252E/Group project/RAND files/h16da/H16D_R.da", 
+                     fwf_widths(widths = df.dict.d$col.width, 
+                                col_names = df.dict.d$col.name), 
+                     col_types = paste(df.dict.d$col.type, collapse = ""))
+
+# add column labels to headers
+attributes(hrs2016c)$variable.labels <- df.dict.c$col.lbl
+attributes(hrs2016d)$variable.labels <- df.dict.d$col.lbl
+
+dim(hrs2016c)
+head(hrs2016c)
+class(hrs2016c)
+
+dim(hrs2016d)
+head(hrs2016d)
+class(hrs2016d)
+
+hrs2016d$hhidpn <- paste(hrs2016d$HHID, hrs2016d$PN, sep="")
+hrs2016d$hhidpn <- as.factor(hrs2016d$hhidpn)
+
+summary(hrs2016d$hhidpn)
+head(hrs2016d$hhidpn)
+
+#https://stackoverflow.com/questions/45109400/how-can-i-read-a-da-file-directly-into-r >> this is for reading in 2016 data because there is no RAND flat file
+
+```
+
+
+```{r}
+
+# create variables for analysis ------------------------------------------------
+head(hrs2016c)
+summary(hrs2010$hhidpn)
+table(hrs2014$ox060_r)
+table(hrs2012$nx026m, hrs2012$nsubhh)
+table(hrs2012$nc109)
+
+
+# how to dichotomize the treatment
+# use an MSM? or if everyone's stratified anyway, then can use TMLE
+# ltmle at each time point and project those at each MSM
+# can do ltmle across all of them
+# include survey weights` 
+
+# subsetting 2010, wave 10 (RAND HRS longitudinal file wave)
+sub2010 <- select(hrs2010, hhidpn, # identifier
+             mx060_r, 
+             mpn_sp, #spouse/partner person number
+             mb091m, # primary race
+             mb028, #Hispanic ethnicity09873
+             mb091m, mb089m1m, mb089m2m, mb089m3m, mb089m4m, mb089m5m, mb089m6m, mb089m7m, 
+                mb089m8m, # for multiple race response (so anything not NA = multiple race)
+             mb014, # educational attainment
+             mx004_r, mx067_r, ma500, ma501, # age (need to calculate from these)
+             mc223, mc224, mc225, # physical activity
+             mc030, mc270m1, mc270m2, mc272, mc210, mc107, mc010, mc018, # comorbidities
+             mq015, mq020, mq025, mq030, mq035, # income
+             mc271, mc067, mc068, # depression
+             mc142, mc139, # to calculate BMI
+             mc129, mc130, # alcohol use
+             mlb001a, mlb001b, mlb001c, mlb001d, mlb001e, mlb001f, mlb001g, mlb001h,
+                mlb001i, mlb001j, mlb001k, mlb001l, mlb001m, mlb001n, mlb001o, mlb001p,
+                mlb001q, mlb001r, mlb001s, mlb001t, # social participation
+             md170 # cognition
+             )
+
+sub2010$pid <- as.factor(sub2010$hhidpn)
+
+# subsetting 2012, wave 11 (RAND HRS longitudinal file wave)
+sub2012 <- select(hrs2012, hhidpn, # identifier
+             nx060_r, 
+             nb091m, # primary race
+             nb028, #Hispanic ethnicity
+             nb091m, nb089m1m, nb089m2m, nb089m3m, #nb089m4m, nb089m5m, nb089m6m, nb089m7m, nb089m8m, # for multiple race response (so anything not NA = multiple race)
+             nb014, # educational attainment
+             nx004_r, nx067_r, na500, na501, # age (need to calculate from these)
+             nc223, nc224, nc225, # physical activity
+             nc030, nc270m1, nc270m2, nc272, nc210, nc107, nc010, nc018, # comorbidities
+             nq015, nq020, nq025, nq030, nq035, # income
+             nc271, nc067, nc068, # depression
+             nc142, nc139, # to calculate BMI
+             nc129, nc130, # alcohol use
+             nlb001a, nlb001b, nlb001c, nlb001d, nlb001e, nlb001f, nlb001g, nlb001h,
+                nlb001i, nlb001j, nlb001k, nlb001l, nlb001m, nlb001n, nlb001o, nlb001p,
+                nlb001q, nlb001r, nlb001s, nlb001t, # social participation
+             nd170 # cognition
+             )
+
+sub2012$pid <- as.factor(sub2012$hhidpn)
+
+# subsetting 2014, wave 12 (RAND HRS longitudinal file wave)
+sub2014 <- select(hrs2014, hhidpn, # identifier
+             ox060_r, 
+             ob091m, # primary race
+             ob028, #Hispanic ethnicity
+             ob091m, ob089m1m, ob089m2m, ob089m3m, #ob098m4m, ob098m5m, ob098m6m, ob098m7m, ob098m8m, # for multiple race response (so anything not NA = multiple race)
+             ob014, # educational attainment
+             ox004_r, ox067_r, oa500, oa501, # age (need to calculate from these)
+             oc223, oc224, oc225, # physical activity
+             oc030, oc270m1, oc270m2, oc272, oc210, oc107, oc010, oc018, # comorbidities
+             oq015, oq020, oq025, oq030, oq035, # income
+             oc271, oc067, #oc068, # depression, no -c068 (PSYCHIATRIC MEDICATION)
+             oc142, oc139, # to calculate BMI
+             oc129, oc130, # alcohol use
+             olb001a, olb001b, olb001c, olb001d, olb001e, olb001f, olb001g, olb001h,
+                olb001i, olb001j, olb001k, olb001l, olb001m, olb001n, olb001o, olb001p,
+                olb001q, olb001r, olb001s, olb001t, # social participation
+              od170 # cognition
+             )
+
+sub2014$pid <- as.factor(sub2014$hhidpn)
+hrs2016d$pid <- as.factor(hrs2016d$hhidpn)
+
+
+# merging data
+hrs_mid <- merge(sub2010, sub2012, by="hhidpn", sort=TRUE)
+hrs_with.Y <- merge(hrs_mid, hrs2016d, by="hhidpn", sort=TRUE)
+hrs <- merge(hrs_mid, sub2014, by="hhidpn", sort=TRUE)
+
+
+# creating variables ----------------------------
+
+# race/ethnicity
+hrs$raceeth.1 <- ifelse(hrs$mb028==1, hrs$raceeth.1==1, hrs$raceeth.1==hrs$mb091m)
+hrs$raceeth.2 <- ifelse(hrs$nb028==1, hrs$raceeth.1==1, hrs$raceeth.1==hrs$nb091m)
+hrs$raceeth.3 <- ifelse(hrs$ob028==1, hrs$raceeth.1==1, hrs$raceeth.1==hrs$ob091m)
+
+# calculating age
+hrs$age.1 <- hrs$ma501 - hrs$mx067_r
+hrs$age.2 <- hrs$na501 - hrs$nx067_r
+hrs$age.3 <- hrs$oa501 - hrs$ox067_r
+# hrs$age.1 <- if(hrs$ma500 <= hrs$mx004_r){hrs$age.1 - 1} ---- having issues with getting months in here...
+
+# calculating income
+hrs$income.1 <- hrs$mq015 + hrs$mq020 + hrs$mq025 + hrs$mq030 + hrs$mq035
+hrs$income.2 <- hrs$nq015 + hrs$nq020 + hrs$nq025 + hrs$nq030 + hrs$nq035
+hrs$income.3 <- hrs$oq015 + hrs$oq020 + hrs$oq025 + hrs$oq030 + hrs$oq035
+
+# calculating BMI
+hrs$bmi.1 <- 703*hrs$mc139/(hrs$mc142^2)
+hrs$bmi.2 <- 703*hrs$nc139/(hrs$nc142^2)
+hrs$bmi.3 <- 703*hrs$oc139/(hrs$oc142^2)
+
+# creating binary alcohol variable
+hrs$alc.1 <- ifelse(hrs$mc129 == 0 | 8 | 9, hrs$alc.1==0, hrs$alc.1==1)
+hrs$alc.2 <- ifelse(hrs$nc129 == 0 | 8 | 9, hrs$alc.1==0, hrs$alc.1==1)
+hrs$alc.3 <- ifelse(hrs$oc129 == 0 | 8 | 9, hrs$alc.1==0, hrs$alc.1==1)
+
+```
+
+```{r}
+# t = 1, m- (2010)
+# t = 2, n- (2012)
+# t = 3, o- (2014)
+# t = 4, p- (2016)
+
+
+##########################
+##  LABELING VARIABLES  ##
+##########################
+label(hrs$hhidpn) = "HHIDPN (Personal identifier)"
+
+####################
+##  DEMOGRAPHICS  ##
+####################
+label(hrs$mx060_r, hrs$nx060_r, hrs$ox060_r) = "Sex"
+label(hrs$mb091m, hrs$nb091m, hrs$ob091m) = "Race - Primary (non-white non-black is masked)"
+label(hrs$mb028, hrs$nb028, hrs$ob028) = "Hispanic ethnicity"
+label(hrs$raceeth.1, hrs$raceeth.2, hrs$raceeth3) = "Race/Ethnicity"
+label(hrs$age.1) = "Age in 2010"
+label(hrs$age.2) = "Age in 2012"
+label(hrs$age.3) = "Age in 2014"
+label(hrs$bmi.1, hrs$bmi.2, hrs$bmi3) = "BMI"
+label(hrs$mb014, hrs$nb014, hrs$ob014) = "Highest level of education"
+label(hrs$income.1, hrs$income.2, hrs$income.3) = "Income"
+# the below were used to calculate income variable
+label(hrs$mq015, hrs$nq015, hrs$oq015) = "How much income from work (self-employed)"
+label(hrs$mq020, hrs$nq020, hrs$oq020) = "How much income from work (wages and salary)"
+label(hrs$mq025, hrs$nq025, hrs$oq025) = "How much income from work (professional practice or trade)"
+label(hrs$mq030, hrs$nq030, hrs$oq030) = "Amount from tips, bonuses, commissions, etc."
+label(hrs$mq035, hrs$nq035, hrs$oq035) = "Amount from second job"
+
+#########################
+##  PHYSICAL ACTIVITY ##
+#########################
+label(hrs$mc223, hrs$nc223, hrs$oc223) = "How often vigorous activity"
+label(hrs$mc224, hrs$nc224, hrs$oc224) = "How often moderate activity"
+label(hrs$mc225, hrs$nc225, hrs$oc225) = "How often mild activity"
+
+####################
+##  COMORBIDITIES ##
+####################
+label(hrs$mc030, hrs$nc030, hrs$oc030) = "Lung disease"
+label(hrs$mc270m1, hrs$nc270m1, hrs$oc270m1) = "Heart disease type - 1"
+label(hrs$mc270m2, hrs$nc270m2, hrs$oc270m2) = "Heart disease type - 2"
+label(hrs$mc272, hrs$nc272, hrs$o272) = "Ever had Alzheimers"
+label(hrs$mc210, hrs$nc210, hrs$oc210) = "Prescription for memory problem"
+label(hrs$mc107, hrs$nc107, hrs$oc107) = "Other medical conditions"
+label(hrs$mc010, hrs$nc010, hrs$oc010) = "Diabetes"
+label(hrs$mc018, hrs$nc018, hrs$oc018) = "Cancer of any kind excluding skin"
+label(hrs$mc271, hrs$nc271, hrs$oc271) = "Ever had depression"
+label(hrs$mc067, hrs$nc067, hrs$oc067) = "Psychiatric treatment"
+label(hrs$mc068, hrs$nc068, hrs$oc068) = "Psychiatric medication"
+
+########################################
+##  SOCIAL PARTICIPATION  -- EXPOSURE ##
+########################################
+label(hrs$mlb001a, hrs$nlb001a, hrs$olb001a) = "How often care for sick or disabled adult"
+label(hrs$mlb001b, hrs$nlb001b, hrs$olb001b) = "How often do acivities with grandchildren"
+label(hrs$mlb001c, hrs$nlb001c, hrs$olb001c) = "How often volunteer work with children or young people"
+label(hrs$mlb001d, hrs$nlb001d, hrs$olb001d) = "How often do any other volunteer or charity work"
+label(hrs$mlb001e, hrs$nlb001e, hrs$olb001e) = "How often attend educational or training course"
+label(hrs$mlb001f, hrs$nlb001f, hrs$olb001f) = "How often go to sport, social, or other club"
+label(hrs$mlb001g, hrs$nlb001g, hrs$olb001g) = "How often attend non-religious organizations"
+label(hrs$mlb001h, hrs$nlb001h, hrs$olb001h) = "How often pray privately" # may not be useful for social participation
+label(hrs$mlb001i, hrs$nlb001i, hrs$olb001i) = "How often read" # may not be useful for social participation
+label(hrs$mlb001j, hrs$nlb001j, hrs$olb001j) = "How often watch television" # may not be useful for social participation
+label(hrs$mlb001k, hrs$nlb001k, hrs$olb001k) = "How often do word games" # may not be useful for social participation
+label(hrs$mlb001l, hrs$nlb001l, hrs$olb001l) = "How often play cards or games" # may not be useful for social participation
+label(hrs$mlb001m, hrs$nlb001m, hrs$olb001m) = "How often do writing" # may not be useful for social participation
+label(hrs$mlb001n, hrs$nlb001n, hrs$olb001n) = "How often use computer for email, internet, or other tasks"
+label(hrs$mlb001o, hrs$nlb001o, hrs$olb001o) = "How often do home or car maintenance or gardening" # may not be useful for social participation
+label(hrs$mlb001p, hrs$nlb001p, hrs$olb001p) = "How often bake or cook something special"
+label(hrs$mlb001q, hrs$nlb001q, hrs$olb001q) = "How often sew or knit"
+label(hrs$mlb001r, hrs$nlb001r, hrs$olb001r) = "How often do hobby or project"
+label(hrs$mlb001s, hrs$nlb001s, hrs$olb001s) = "How often play sports/exercise"
+label(hrs$mlb001t, hrs$nlb001t, hrs$olb001t) = "How often walk for 20+ mins"
+
+#####################
+##  TICS - OUTCOME ##
+#####################
+label(hrs$md170, hrs$md170, hrs$md170, hrs$PD170) = "TICS score count" # including PD170 because it's t=4 outcome
+
+names(hrs)
+
+
+save(hrs, file="~/Box Sync/3 - FA18/252E/Group project/RAND files/HRS_final.Rda")
+
+```
+
+```{r}
+summary(hrs)
+
+table(hrs$od170)
+
+table(hrs$mb014)
+
+table(hrs$mb091m)
+
+table(hrs$PD170)
+```
