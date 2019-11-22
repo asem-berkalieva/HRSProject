@@ -9,7 +9,8 @@ data_files_master <- list.files(path_to_files, pattern='da')
 
 data_files <- list.files(paste0(path_to_files, data_files_master[1]), # LOOKING AT FIRST FILE
                          full.names=TRUE,
-                         pattern='_R.da')
+                         pattern='_(R|H).da')
+
 
 # ALL CORRESPONDING DICTIONARIES
 dict_files <- gsub('da', 'sta', data_files)
@@ -117,7 +118,7 @@ elapsed <- t1-t0
 # SUMMARY TABLE
 summary_df <- data.frame(do.call(rbind, lapply(file_info, `[`, c(1,2,4))))
 summary_df <- apply(summary_df, 2, as.character)
-write.csv(summary_df, '../../output-tables/summary-df.csv', row.names=FALSE)
+# write.csv(summary_df, '../../output-tables/summary-df.csv', row.names=FALSE)
 
 # ALL COL NAMES
 all_col_names <- lapply(1:length(file_info), function(k) {
@@ -136,5 +137,5 @@ sapply(1:length(all_col_names), function(k) 'OSUBHH' %in% all_col_names[[k]])
 
 ##########################
 # 4. WRITE ALL DF'S TO CSV
-lapply(1:length(file_info), function(x) write.csv(file_info[[x]]$df,
-                                                  paste0('../../data/', gsub('da', 'csv', summary_df[x,2]))))
+# lapply(1:length(file_info), function(x) write.csv(file_info[[x]]$df,
+#                                                   paste0('../../data/', gsub('da', 'csv', summary_df[x,2]))))

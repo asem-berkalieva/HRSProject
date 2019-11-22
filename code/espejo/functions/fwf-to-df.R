@@ -8,7 +8,7 @@ fwf_to_df <- function(this_data, this_dict, return_time=FALSE) {
   
   
   # READ AND FORMAT DICTIONARY FILE
-  dict_df <- read.table(this_dict, skip=2, fill = TRUE, stringsAsFactors = FALSE)
+  dict_df <- read.table(this_dict, skip=2, fill=TRUE, stringsAsFactors=FALSE, row.names=NULL)
   colnames(dict_df) <- c('col_num','col_type','col_name','col_width','col_lbl')
   dict_df <- dict_df[-nrow(dict_df),]
   
@@ -25,9 +25,11 @@ fwf_to_df <- function(this_data, this_dict, return_time=FALSE) {
                   ifelse(x == 'double', 'd', 'c')))
   })
   
+  dict_df$col_type <- ifelse(is.na(dict_df$col_type), 'c', dict_df$col_type)
+  
   # READ IN DATA USING FIXED WIDTH FILE SPECS
   this_df <- read_fwf(file = this_data,
-                      fwf_widths(widths = dict_df$col_width,col_names = dict_df$col_name),
+                      fwf_widths(widths = dict_df$col_width, col_names = dict_df$col_name),
                       col_types = paste(dict_df$col_type, collapse = ''))
   
   attributes(this_df)$variable_labels <- dict_df$col_lbl
