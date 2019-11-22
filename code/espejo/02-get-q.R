@@ -12,7 +12,7 @@ data_files <- list.files(paste0(path_to_files, data_files_master[1]), # LOOKING 
                          pattern='_(R|H).da')
 
 # NARROW IT DOWN
-year_data <- data_files[grep(x=data_files, pattern='[0-9]{2}(B|C|Q|PR)')]
+year_data <- data_files[grep(x=data_files, pattern='[0-9]{2}(B|C|Q|PR|J)')]
 year_data <- year_data[-which(grepl('PR_H', year_data))]
 
 
@@ -53,10 +53,22 @@ table(c$MC150)
 3283 / (17325 + 3283)
 
 
+###############
+# J: Employment
+j_data <- year_data[3]
+j_dict <- year_dict[3]
+
+# DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
+j <- fwf_to_df(j_data, j_dict)
+
+# SUBSET
+j <- j %>% select(HHID, PN, MJ005M1)
+
+
 ###########
 # PR: Education
-pr_data <- year_data[3]
-pr_dict <- year_dict[3]
+pr_data <- year_data[4]
+pr_dict <- year_dict[4]
 
 # DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
 pr <- fwf_to_df(pr_data, pr_dict)
@@ -69,8 +81,8 @@ pr <- pr %>% select(HHID, PN, MZ216)
 
 ###########
 # Q: Income
-q_data <- year_data[4]
-q_dict <- year_dict[4]
+q_data <- year_data[5]
+q_dict <- year_dict[5]
 
 # DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
 q <- fwf_to_df(q_data, q_dict)
@@ -85,6 +97,9 @@ test <- merge(b, c, by=c('HHID', 'PN'))
 head(test)
 
 test <- merge(test, pr, by=c('HHID', 'PN'))
+head(test)
+
+test <- merge(test, j, by=c('HHID', 'PN'))
 head(test)
 
 test <- merge(test, q, by=c('HHID'))
@@ -106,7 +121,7 @@ data_files <- list.files(paste0(path_to_files, data_files_master[2]), # LOOKING 
                          pattern='_(R|H).da')
 
 # NARROW IT DOWN
-year_data <- data_files[grep(x=data_files, pattern='[0-9]{2}(B|C|Q|PR)')]
+year_data <- data_files[grep(x=data_files, pattern='[0-9]{2}(B|C|Q|PR|J)')]
 year_data <- year_data[-which(grepl('PR_H', year_data))]
 
 
@@ -145,10 +160,21 @@ round(table(c$NC150) / nrow(c), 2)
 # 5: NO
 
 
+###############
+# J: Employment
+j_data <- year_data[3]
+j_dict <- year_dict[3]
+
+# DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
+j <- fwf_to_df(j_data, j_dict)
+
+# SUBSET
+j <- j %>% select(HHID, PN, NJ005M1)
+
 ###########
 # PR: Education
-pr_data <- year_data[3]
-pr_dict <- year_dict[3]
+pr_data <- year_data[4]
+pr_dict <- year_dict[4]
 
 # DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
 pr <- fwf_to_df(pr_data, pr_dict)
@@ -161,8 +187,8 @@ pr <- pr %>% select(HHID, PN, NZ216)
 
 ###########
 # Q: Income
-q_data <- year_data[4]
-q_dict <- year_dict[4]
+q_data <- year_data[5]
+q_dict <- year_dict[5]
 
 # DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
 q <- fwf_to_df(q_data, q_dict)
@@ -179,6 +205,10 @@ head(test)
 test <- merge(test, pr, by=c('HHID', 'PN'))
 head(test)
 
+test <- merge(test, j, by=c('HHID', 'PN'))
+head(test)
+
+
 test <- merge(test, q, by=c('HHID'))
 head(test)
 
@@ -190,6 +220,9 @@ x <- test[complete.cases(test),]
 
 
 
+
+
+
 ###########################
 # 3. READ IN FILES FOR 2014
 
@@ -198,7 +231,7 @@ data_files <- list.files(paste0(path_to_files, data_files_master[3]), # LOOKING 
                          pattern='_(R|H).da')
 
 # NARROW IT DOWN
-year_data <- data_files[grep(x=data_files, pattern='[0-9]{2}(B|C|Q|PR)')]
+year_data <- data_files[grep(x=data_files, pattern='[0-9]{2}(B|C|Q|PR|J)')]
 year_data <- year_data[-which(grepl('PR_H', year_data))]
 
 
@@ -239,8 +272,8 @@ round(table(c$OC150) / nrow(c), 2)
 
 ###########
 # PR: Education
-pr_data <- year_data[3]
-pr_dict <- year_dict[3]
+pr_data <- year_data[4]
+pr_dict <- year_dict[4]
 
 # DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
 pr <- fwf_to_df(pr_data, pr_dict)
@@ -249,12 +282,22 @@ pr <- fwf_to_df(pr_data, pr_dict)
 pr <- pr %>% select(HHID, PN, OZ216)
 
 
+###############
+# J: Employment
+j_data <- year_data[3]
+j_dict <- year_dict[3]
+
+# DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
+j <- fwf_to_df(j_data, j_dict)
+
+# SUBSET
+j <- j %>% select(HHID, PN, OJ005M1)
 
 
 ###########
 # Q: Income
-q_data <- year_data[4]
-q_dict <- year_dict[4]
+q_data <- year_data[5]
+q_dict <- year_dict[5]
 
 # DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
 q <- fwf_to_df(q_data, q_dict)
@@ -269,6 +312,9 @@ test <- merge(b, c, by=c('HHID', 'PN'))
 head(test)
 
 test <- merge(test, pr, by=c('HHID', 'PN'))
+head(test)
+
+test <- merge(test, j, by=c('HHID', 'PN'))
 head(test)
 
 test <- merge(test, q, by=c('HHID'))
@@ -290,8 +336,10 @@ data_files <- list.files(paste0(path_to_files, data_files_master[4]), # LOOKING 
                          pattern='_(R|H).da')
 
 # NARROW IT DOWN
-year_data <- data_files[grep(x=data_files, pattern='[0-9]{2}(B|C|Q|PR)')]
+year_data <- data_files[grep(x=data_files, pattern='[0-9]{2}(B|C|Q|PR|J)')]
 year_data <- year_data[-which(grepl('PR_H', year_data))]
+year_data <- year_data[-which(grepl('J3', year_data))]
+
 
 
 year_dict <- gsub('da', 'sta', year_data)
@@ -329,10 +377,21 @@ round(table(c$PC150) / nrow(c), 2)
 # 5: NO
 
 
+###############
+# J: Employment
+j_data <- year_data[3]
+j_dict <- year_dict[3]
+
+# DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
+j <- fwf_to_df(j_data, j_dict)
+
+# SUBSET
+j <- j %>% select(HHID, PN, PJ005M1)
+
 ###########
 # PR: Education
-pr_data <- year_data[3]
-pr_dict <- year_dict[3]
+pr_data <- year_data[4]
+pr_dict <- year_dict[4]
 
 # DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
 pr <- fwf_to_df(pr_data, pr_dict)
@@ -345,8 +404,8 @@ pr <- pr %>% select(HHID, PN, PZ216)
 
 ###########
 # Q: Income
-q_data <- year_data[4]
-q_dict <- year_dict[4]
+q_data <- year_data[5]
+q_dict <- year_dict[5]
 
 # DATAFRAME FUNCTION AVAILABLE IN SUBDIRECTORY / SOURCED AT BEGINNING
 q <- fwf_to_df(q_data, q_dict)
@@ -363,12 +422,30 @@ head(test)
 test <- merge(test, pr, by=c('HHID', 'PN'))
 head(test)
 
+test <- merge(test, j, by=c('HHID', 'PN'))
+head(test)
+
 test <- merge(test, q, by=c('HHID'))
 head(test)
 
+
+
+# # MERGE THINGS
+# test <- merge(b, c)
+# head(test)
+# 
+# test <- merge(test, pr)
+# head(test)
+# 
+# test <- merge(test, j)
+# head(test)
+# 
+# test <- merge(test, q)
+# head(test)
+
 # CHECK COMPLETES
-nrow(test)
-x <- test[complete.cases(test),]
+# nrow(test)
+# x <- test[complete.cases(test),]
 
 # write.csv(test, '../../data/merged/hrs-2016.csv')
 

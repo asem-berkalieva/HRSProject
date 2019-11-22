@@ -1,3 +1,5 @@
+library(readr)
+
 ####################
 # CLEAN COLUMN NAMES
 
@@ -6,10 +8,12 @@ h2012 <- read_csv('../../data/merged/hrs-2012.csv')
 h2014 <- read_csv('../../data/merged/hrs-2014.csv')
 h2016 <- read_csv('../../data/merged/hrs-2016.csv')
 
-names(h2010)[4:17] <- gsub('M', '', names(h2010)[4:17])
-names(h2012)[4:17] <- gsub('N', '', names(h2010)[4:17])
-names(h2014)[4:17] <- gsub('O', '', names(h2010)[4:17])
-names(h2016)[4:17] <- gsub('P', '', names(h2010)[4:17])
+names(h2010)[4:ncol(h2010)] <- gsub('M', '', names(h2010)[4:ncol(h2010)])
+names(h2012)[4:ncol(h2012)] <- gsub('N', '', names(h2012)[4:ncol(h2012)])
+names(h2014)[4:ncol(h2014)] <- gsub('O', '', names(h2014)[4:ncol(h2014)])
+names(h2016)[4:ncol(h2016)] <- gsub('P', '', names(h2016)[4:ncol(h2016)])
+
+sapply(list(h2010, h2012, h2014, h2016), names)
 
 
 
@@ -19,6 +23,7 @@ names(h2016)[4:17] <- gsub('P', '', names(h2010)[4:17])
 nrow(h2010) + nrow(h2012) + nrow(h2014) + nrow(h2016)
 
 full_data <- rbind(h2010, h2012, h2014, h2016)
+
 
 full_data[,which(grepl('Q', names(full_data)))] <- apply(full_data[,which(grepl('Q', names(full_data)))], 2, function(x) ifelse(is.na(x), 0, x))
 
@@ -33,9 +38,19 @@ clean <- full_data %>%
   rename(cancer=C018) %>%
   rename(years_education=Z216) %>%
   rename(hhid=HHID) %>%
-  rename(pn=PN) %>%
+  rename(pn=PN)
+
+years <- c(rep(2010, nrow(h2010)),
+           rep(2012, nrow(h2012)),
+           rep(2014, nrow(h2014)),
+           rep(2016, nrow(h2016)))
+
+clean <- cbind(clean, years)
+
+clean <- clean %>%
   filter(depression %in% c(1,5)) %>%
   mutate(depression = ifelse(depression==1, 1, 0)) %>%
   mutate(person_id = paste0('h', hhid, 'pn', pn))
 
 
+# write.csv(clean, '../../data/hrs.csv')
