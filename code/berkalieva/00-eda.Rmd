@@ -146,5 +146,15 @@ ggplot(edu_desc, aes(x = edu_type_ordered)) +
   labs(x = "Response type", y = "Responses") 
 ```
 
+# Investigate multiple responses
 
+```{r}
+hrs_10 <- read.csv('../../data/merged/hrs-2010.csv')
+
+# number rows
+responses <- nrow(hrs_10) # 23037
+
+# number distinct identifiers
+unique <- hrs_10 %>% distinct(HHID, PN) # 22034
+```
 
