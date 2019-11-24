@@ -1,0 +1,150 @@
+---
+title: "HRS EDA"
+author: "Asem Berkalieva"
+date: "11/21/2019"
+output: pdf_document
+---
+
+## Libraries
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+## Data
+```{r}
+# all years (cleaned data)
+hrs <- read.csv('../../data/hrs.csv')
+```
+
+## Size
+The data contains 26,475 unique individuals. 
+```{r}
+# total people
+n_hrs <- length(unique(hrs$person_id))
+n_hrs
+
+# total people per year / drop-off
+hrs %>% 
+  group_by(years) %>%
+  distinct(person_id) %>%
+  summarise(n())
+```
+
+## Income Range
+
+Income responses range very heavily. The survey question asks these questions for the full past [Calendar Year].
+```{r}
+# range of responses
+# highest amounts reported
+hrs %>% select(person_id, income) %>%
+  arrange(-income)
+
+# lowest amounts reported
+hrs %>% select(person_id, income) %>%
+  arrange(income)
+
+# overall
+summary(hrs$income)
+ggplot(hrs %>% filter(!is.na(income)), aes(x = income)) + 
+  geom_histogram(col = "white", fill = "pink2", bins = 7)  + 
+  ggtitle("Range of income responses") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Income") 
+```
+
+## Missing Data for Income
+
+It looks like people answered questions/surveys multiple times per year. In fact, the maximum times that an individual reported their income within one year is 11. This should be further investigated...
+```{r}
+# income reported per person 
+hrs %>% 
+  group_by(person_id) %>% 
+  summarise(income_responses = sum(!is.na(income))) %>%
+  arrange(-income_responses)
+
+# example: this person answered multiple times and their answered differed
+hrs %>% filter(person_id == 'h090841pn032')
+```
+
+To find answers by year, I'm going to look for how many people reported income all four years versus those that did not. 5,322 out of the 26,475 individuals reported an income for all four years (~20%).
+```{r}
+hrs %>% 
+  group_by(person_id, years) %>% 
+  summarise(income_responses = sum(!is.na(income))) %>%
+  filter(income_responses != 0) %>% 
+  group_by(person_id) %>%
+  count() %>% filter(n == 4) %>% 
+  ungroup() %>% count()
+```
+
+## Missing Data for Depression
+
+I repeat the process for depression, and the answer is the same. This time, 13,952 people answered all four years (~53%).
+```{r}
+# income reported per person 
+hrs %>% 
+  group_by(person_id, years) %>% 
+  summarise(dep_responses = sum(!is.na(depression))) %>%
+  filter(dep_responses != 0) %>% 
+  group_by(person_id) %>%
+  count() %>% filter(n == 4) %>% 
+  ungroup() %>% count()
+```
+
+## Education
+
+15,320 people did not report anything for education, while 11,162 did. Of those that did, some reported two different types of education. 
+```{r}
+# how many did not answer: 21561 - 6241
+no_edu <- hrs %>% distinct(person_id, education) %>%
+  filter(is.na(education))
+
+# who answered
+edu <- hrs %>% distinct(person_id, education) %>%
+  filter(!is.na(education)) 
+
+# number who both did and did not answer at some point
+nrow(merge(no_edu, edu, by = c("person_id", "person_id")))
+
+# education responses
+edu_response <- data.frame(cbind(type = c("no", "yes"), 
+                                 responses = c(15320, 11162)))
+ggplot(edu_response, aes(x = type, y = responses)) + 
+  geom_bar(stat = "identity", fill = "pink2") + 
+  ggtitle("Number of people who provided education information") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Response type", y = "Responses") 
+
+# range of education
+#edu_range <- edu %>% 
+#  group_by(person_id) %>% 
+#  summarise(education = mean(education))
+```
+
+Here is a visual of types of education responses for those who did answer:
+```{r, warning=FALSE, message=FALSE}
+# associate response number with edu type
+edu_desc <- edu %>% mutate(edu_type = case_when(education == 0 ~ "no formal ed",
+                                                 education >= 1 & education <= 11 ~ "grade school",
+                                                 education == 12 ~ "high school",
+                                                 education > 12 & education < 16 ~ "some college",
+                                                 education == 16 ~ "college grad",
+                                                 education == 17 ~ "post college",
+                                                 education == 97 ~ "other",
+                                                 education == 98 ~ "DK/NA",
+                                                 education == 99 ~ "RF")) %>%
+  mutate(edu_type_ordered = forcats::fct_relevel(edu_type, c("no formal ed",
+                                               "grade school", "high school",
+                                               "some college", "college grad", 
+                                               "post college", "other", "DK/NA", "DF")))
+
+# visualize types of education
+ggplot(edu_desc, aes(x = edu_type_ordered)) + 
+  geom_bar(fill = "pink2") + 
+  ggtitle("Range of Education By Those Who Answered") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Response type", y = "Responses") 
+```
+
+
+
