@@ -68,27 +68,43 @@ hrs %>% filter(person_id == 'h090841pn032')
 
 To find answers by year, I'm going to look for how many people reported income all four years versus those that did not. 5,322 out of the 26,475 individuals reported an income for all four years (~20%).
 ```{r}
-hrs %>% 
+# subjects w income response 4 years
+id_income <- hrs %>% 
   group_by(person_id, years) %>% 
   summarise(income_responses = sum(!is.na(income))) %>%
   filter(income_responses != 0) %>% 
   group_by(person_id) %>%
   count() %>% filter(n == 4) %>% 
-  ungroup() %>% count()
+  ungroup() 
+
+# how many
+id_income %>% count()
 ```
 
 ## Missing Data for Depression
 
 I repeat the process for depression, and the answer is the same. This time, 13,952 people answered all four years (~53%).
 ```{r}
-# income reported per person 
-hrs %>% 
+# subjects w depression response 4 years
+id_depression <- hrs %>% 
   group_by(person_id, years) %>% 
   summarise(dep_responses = sum(!is.na(depression))) %>%
   filter(dep_responses != 0) %>% 
   group_by(person_id) %>%
   count() %>% filter(n == 4) %>% 
-  ungroup() %>% count()
+  ungroup()
+
+# how many
+id_depression %>% count
+```
+
+## Overlap of Depression and Income Consistency
+
+We observed ~20% of the subjects anwered for income all 4 years and ~53% answered for depression all 4 years. Everyone who reported for income 4 years straight also reported for depression.
+
+```{r}
+# common IDs
+merge(id_income, id_depression, by = c("person_id", "person_id")) %>% count()
 ```
 
 ## Education
