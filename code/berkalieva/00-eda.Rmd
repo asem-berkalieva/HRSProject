@@ -103,8 +103,21 @@ id_depression %>% count
 We observed ~20% of the subjects anwered for income all 4 years and ~53% answered for depression all 4 years. Everyone who reported for income 4 years straight also reported for depression.
 
 ```{r}
-# common IDs
-merge(id_income, id_depression, by = c("person_id", "person_id")) %>% count()
+# common IDs for complete responses
+consistent_subjects <- merge(id_income, id_depression, by = c("person_id", "person_id"))
+
+consistent_subjects %>% count()
+```
+
+Generate a dataframe of only those with responses for all 4 years
+```{r, eval=FALSE}
+# filtered csv
+hrs_complete <- hrs %>% filter(person_id %in% consistent_subjects$person_id) %>%
+  select(-X)
+
+# write to csv
+write.csv(hrs_complete,
+          '../../data/hrs_complete.csv')
 ```
 
 ## Education

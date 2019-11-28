@@ -1,0 +1,52 @@
+---
+title: 'HRS EDA: Complete Responses'
+author: "Asem Berkalieva"
+date: "11/28/2019"
+output: pdf_document
+---
+
+## Libraries
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+## Data
+```{r}
+# all years (cleaned data)
+hrs <- read.csv('../../data/hrs_complete.csv')
+```
+
+## Size
+The data contains 5,322 unique individuals. 
+```{r}
+# total people
+n_hrs <- length(unique(hrs$person_id))
+n_hrs
+
+# total people per year / drop-off
+hrs %>% 
+  group_by(years) %>%
+  distinct(person_id) %>%
+  summarise(n())
+```
+
+## Common Household
+
+```{r}
+# randomly sample one from each household
+set.seed(242)
+hhid_unique <- hrs %>% group_by(hhid) %>% sample_n(1) %>% select(person_id)
+
+# filter for unique
+hrs_unique <- hrs %>% filter(person_id %in% hhid_unique$person_id)
+```
+
+## New size
+
+There now exist 3,641 subjects in our dataset such that each person comes from a unique household.
+```{r}
+# total people with unique household
+n_hrs <- length(unique(hrs_unique$person_id))
+n_hrs
+```
+
