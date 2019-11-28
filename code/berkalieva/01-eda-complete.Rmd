@@ -50,3 +50,92 @@ n_hrs <- length(unique(hrs_unique$person_id))
 n_hrs
 ```
 
+## Education
+
+1,774 people did not report anything for education, while 1,867 did. Of those that did, some reported two different types of education. 
+```{r}
+# how many did not answer: 21561 - 6241
+no_edu <- hrs_unique %>% distinct(person_id, education) %>%
+  filter(is.na(education))
+
+# who answered
+edu <- hrs_unique %>% distinct(person_id, education) %>%
+  filter(!is.na(education)) 
+
+# number who both did and did not answer at some point
+nrow(merge(no_edu, edu, by = c("person_id", "person_id")))
+
+# education responses
+edu_response <- data.frame(cbind(type = c("no", "yes"), 
+                                 responses = c(1774, 1867)))
+ggplot(edu_response, aes(x = type, y = responses)) + 
+  geom_bar(stat = "identity", fill = "pink2") + 
+  ggtitle("Number of people who provided education information") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Response type", y = "Responses") 
+
+# range of education
+#edu_range <- edu %>% 
+#  group_by(person_id) %>% 
+#  summarise(education = mean(education))
+```
+
+Here is a visual of types of education responses for those who did answer:
+```{r, warning=FALSE, message=FALSE}
+# associate response number with edu type
+edu_desc <- edu %>% mutate(edu_type = case_when(education == 0 ~ "no formal ed",
+                                                 education >= 1 & education <= 11 ~ "grade school",
+                                                 education == 12 ~ "high school",
+                                                 education > 12 & education < 16 ~ "some college",
+                                                 education == 16 ~ "college grad",
+                                                 education == 17 ~ "post college",
+                                                 education == 97 ~ "other",
+                                                 education == 98 ~ "DK/NA",
+                                                 education == 99 ~ "RF")) %>%
+  mutate(edu_type_ordered = forcats::fct_relevel(edu_type, c("no formal ed",
+                                               "grade school", "high school",
+                                               "some college", "college grad", 
+                                               "post college", "other", "DK/NA", "DF")))
+
+# visualize types of education
+ggplot(edu_desc, aes(x = edu_type_ordered)) + 
+  geom_bar(fill = "pink2") + 
+  ggtitle("Range of Education By Those Who Answered") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Response type", y = "Responses") 
+```
+
+## Income Range
+
+Income responses range very heavily. The survey question asks these questions for the full past [Calendar Year].
+```{r}
+# range of responses
+# highest amounts reported
+hrs_unique %>% select(person_id, income) %>%
+  arrange(-income)
+
+# lowest amounts reported
+hrs_unique %>% select(person_id, income) %>%
+  arrange(income)
+
+# overall
+summary(hrs_unique$income)
+ggplot(hrs_unique %>% filter(!is.na(income)), aes(x = income)) + 
+  geom_histogram(col = "white", fill = "pink2", bins = 7)  + 
+  ggtitle("Range of income responses") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  labs(x = "Income") 
+```
+
+Once again, some people reported multiple incomes per year (max is 11).
+```{r}
+# income reported per person 
+hrs_unique %>% 
+  group_by(person_id) %>% 
+  summarise(income_responses = sum(!is.na(income))) %>%
+  arrange(-income_responses)
+
+# example: this person answered multiple times and their answered differed
+hrs_unique %>% filter(person_id == 'h090841pn032')
+```
+
