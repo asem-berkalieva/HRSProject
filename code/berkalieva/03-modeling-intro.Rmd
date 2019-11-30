@@ -1,0 +1,25 @@
+---
+title: "Intro to Modeling"
+author: "Asem Berkalieva"
+date: "11/23/2019"
+output: pdf_document
+---
+
+## Libraries
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+## Data
+```{r}
+# all years (cleaned data)
+hrs <- read.csv('../../data/hrs_finalized.csv')
+```
+
+## Poisson GLM
+```{r}
+
+```
+
+
+

@@ -110,14 +110,16 @@ consistent_subjects %>% count()
 ```
 
 Generate a dataframe of only those with responses for all 4 years
-```{r, eval=FALSE}
+```{r}
 # filtered csv
 hrs_complete <- hrs %>% filter(person_id %in% consistent_subjects$person_id) %>%
   select(-X)
+```
 
+```{r, eval=FALSE}
 # write to csv
 write.csv(hrs_complete,
-          '../../data/hrs_complete.csv')
+          '../../data/hrs_filtered.csv')
 ```
 
 ## Education

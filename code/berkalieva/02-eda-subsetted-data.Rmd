@@ -1,9 +1,11 @@
 ---
-title: 'HRS EDA: Complete Responses'
+title: "HRS: EDA on Completed, Subsetted Data"
 author: "Asem Berkalieva"
-date: "11/28/2019"
+date: "11/30/2019"
 output: pdf_document
 ---
+
+I now explore the final data: the one with responses from subjects for all 4 years and no more than one income response per year.
 
 ## Libraries
 ```{r, message=FALSE, warning=FALSE}
@@ -13,11 +15,11 @@ library(tidyverse)
 ## Data
 ```{r}
 # all years (cleaned data)
-hrs <- read.csv('../../data/hrs_complete.csv')
+hrs <- read.csv('../../data/hrs_finalized.csv')
 ```
 
 ## Size
-The data contains 5,322 unique individuals. 
+The data contains 3,401 unique individuals. 
 ```{r}
 # total people
 n_hrs <- length(unique(hrs$person_id))
@@ -30,36 +32,16 @@ hrs %>%
   summarise(n())
 ```
 
-## Common Household
-
-```{r}
-# randomly sample one from each household
-set.seed(242)
-hhid_unique <- hrs %>% group_by(hhid) %>% sample_n(1) %>% select(person_id)
-
-# filter for unique
-hrs_unique <- hrs %>% filter(person_id %in% hhid_unique$person_id)
-```
-
-## New size
-
-There now exist 3,641 subjects in our dataset such that each person comes from a unique household.
-```{r}
-# total people with unique household
-n_hrs <- length(unique(hrs_unique$person_id))
-n_hrs
-```
-
 ## Education
 
-1,774 people did not report anything for education, while 1,867 did. Of those that did, some reported two different types of education. 
+1,633 people did not report anything for education, while 1,768 did. Of those that did, some reported two different types of education. 
 ```{r}
-# how many did not answer: 21561 - 6241
-no_edu <- hrs_unique %>% distinct(person_id, education) %>%
+# how many did not answer: 1633
+no_edu <- hrs %>% distinct(person_id, education) %>%
   filter(is.na(education))
 
-# who answered
-edu <- hrs_unique %>% distinct(person_id, education) %>%
+# who answered: 1768
+edu <- hrs %>% distinct(person_id, education) %>%
   filter(!is.na(education)) 
 
 # number who both did and did not answer at some point
@@ -67,7 +49,7 @@ nrow(merge(no_edu, edu, by = c("person_id", "person_id")))
 
 # education responses
 edu_response <- data.frame(cbind(type = c("no", "yes"), 
-                                 responses = c(1774, 1867)))
+                                 responses = c(1633, 1768)))
 ggplot(edu_response, aes(x = type, y = responses)) + 
   geom_bar(stat = "identity", fill = "pink2") + 
   ggtitle("Number of people who provided education information") + 
@@ -105,37 +87,32 @@ ggplot(edu_desc, aes(x = edu_type_ordered)) +
   labs(x = "Response type", y = "Responses") 
 ```
 
-## Income Range
-
+## Income 
 Income responses range very heavily. The survey question asks these questions for the full past [Calendar Year].
 ```{r}
 # range of responses
 # highest amounts reported
-hrs_unique %>% select(person_id, income) %>%
+hrs %>% select(person_id, income) %>%
   arrange(-income)
 
 # lowest amounts reported
-hrs_unique %>% select(person_id, income) %>%
+hrs %>% select(person_id, income) %>%
   arrange(income)
 
 # overall
-summary(hrs_unique$income)
-ggplot(hrs_unique %>% filter(!is.na(income)), aes(x = income)) + 
+summary(hrs$income)
+ggplot(hrs %>% filter(!is.na(income)), aes(x = income)) + 
   geom_histogram(col = "white", fill = "pink2", bins = 7)  + 
   ggtitle("Range of income responses") + 
   theme(plot.title = element_text(hjust = 0.5)) +
   labs(x = "Income") 
 ```
 
-Once again, some people reported multiple incomes per year (max is 11).
+## Basic summaries by time
+
+This is a bad graph. I am trying to visualize income over time for all subjects (without looking at depression).
 ```{r}
-# income reported per person 
-hrs_unique %>% 
-  group_by(person_id) %>% 
-  summarise(income_responses = sum(!is.na(income))) %>%
-  arrange(-income_responses)
-
-# example: this person answered multiple times and their answered differed
-hrs_unique %>% filter(person_id == 'h090841pn032')
+# spaghetti plot of income by time per person
+ggplot(hrs, aes(x = years, y = income, group = person_id)) + 
+  geom_line(alpha = 0.5)
 ```
-
