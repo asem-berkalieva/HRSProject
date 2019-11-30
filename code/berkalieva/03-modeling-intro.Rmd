@@ -16,10 +16,51 @@ library(tidyverse)
 hrs <- read.csv('../../data/hrs_finalized.csv')
 ```
 
-## Poisson GLM
-```{r}
+## Binomial Simple GLM
 
+The simplest form: treating every observation as independent. Not what we want, but we will build up. Our response, depression, is a binary variable, so we run a binomial regression. Our covariates are income and time (years).
+```{r}
+simple_bin <- glm(depression ~ income + years + income*years, 
+                  data = hrs, family = "binomial")
+
+summary(simple_bin)
 ```
 
+## GEE: Independence
+Accounting for repeated measures per person, we fit a binomial GEE models. First, we use 'independence' correlation structure, which reduces the model back to a simple regression, as it does not account for repeated measures within individuals:
+```{r}
+library(gee)
+gee_ind <- gee(depression ~ income + years + income*years, person_id, 
+               data = hrs, family = binomial,
+               corstr = "independence")
+
+# summary
+ss_ind <- data.frame(summary(gee_ind)$coefficients)
+ss_ind <- data.frame(ss_ind, pvalue = 2 * (1 - pnorm(abs(ss_ind[,5]))))
+round(ss_ind, 4)
+```
+
+## GEE: Exchangeable
+Now, we account for repeated measures within individuals. Results are identical to those using an independence correlation matrix.
+```{r}
+gee_exch <- gee(depression ~ income + years + income*years, person_id, 
+                data = hrs, family = binomial,
+                corstr = "exchangeable")
+
+# summary
+ss_exch <- data.frame(summary(gee_exch)$coefficients)
+ss_exch <- data.frame(ss_exch, pvalue = 2 * (1 - pnorm(abs(ss_exch[,5]))))
+round(ss_exch, 4)
+```
+
+## Mixed Model
+
+```{r}
+library(lme4)
+glmer <- lme4::glmer(depression ~ income + (1|person_id), 
+               data = hrs, family = binomial)
+
+summary(glmer)
+```
 
 
