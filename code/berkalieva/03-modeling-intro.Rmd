@@ -57,7 +57,7 @@ round(ss_exch, 4)
 
 ```{r}
 library(lme4)
-glmer <- lme4::glmer(depression ~ income + (1|person_id), 
+glmer <- lme4::glmer(depression ~ income + years + income*years + (1|person_id), 
                data = hrs, family = binomial)
 
 summary(glmer)
