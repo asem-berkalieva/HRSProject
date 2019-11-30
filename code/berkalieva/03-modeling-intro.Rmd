@@ -55,7 +55,7 @@ round(ss_exch, 4)
 
 ## Mixed Model
 
-```{r}
+```{r, error=TRUE}
 library(lme4)
 glmer <- lme4::glmer(depression ~ income + years + income*years + (1|person_id), 
                data = hrs, family = binomial)
@@ -63,4 +63,114 @@ glmer <- lme4::glmer(depression ~ income + years + income*years + (1|person_id),
 summary(glmer)
 ```
 
+
+
+# Rescale
+
+```{r}
+library(ggplot2)
+hrs %>%
+  ggplot(aes(x=income)) +
+    geom_histogram(col='black', lwd=0.2, bins=30) +
+    ggtitle('Raw Income') +
+    theme_minimal()
+# ggsave('../../visuals/raw-income.png', width=12, height=10)
+```
+
+```{r}
+# REMOVE OUTLIERS
+five_num <- summary(hrs$income)
+for_out  <- (five_num[5] - five_num[2])*1.5
+```
+
+```{r}
+# CREATE SUBSET
+hrs_sub <- hrs %>%
+  filter(income>0) %>%
+  filter(income<five_num[5]+for_out)
+
+hrs_sub$years[which(hrs_sub$years==2010)] <- 1
+hrs_sub$years[which(hrs_sub$years==2012)] <- 2
+hrs_sub$years[which(hrs_sub$years==2014)] <- 3
+hrs_sub$years[which(hrs_sub$years==2015)] <- 4
+```
+
+```{r}
+hrs_sub %>%
+  ggplot(aes(x=income)) +
+    geom_histogram(col='black', lwd=0.2, bins=30) +
+    ggtitle('Income (No Outliers)') +
+    theme_minimal()
+# ggsave('../../visuals/no-out-income.png', width=12, height=10)
+```
+
+```{r}
+# RESCALE VALUES
+hrs_sub <- hrs_sub %>%
+  mutate(income=scale(income))
+```
+
+```{r}
+hrs_sub %>%
+  ggplot(aes(x=income)) +
+    geom_histogram(col='black', lwd=0.2, bins=30) +
+    ggtitle('Rescaled Income (No Outliers)') +
+    theme_minimal()
+# ggsave('../../visuals/rescaled-income.png', width=12, height=10)
+```
+
+```{r}
+head(hrs_sub %>% select(person_id, depression, income, years)) 
+```
+
+## Simple Logistic Regression
+
+```{r}
+simple_bin <- glm(depression ~ income + years + income*years, 
+                  data = hrs_sub, family = "binomial")
+
+summary(simple_bin)
+```
+
+```{r}
+simple_bin2 <- glm(depression ~ income + years, 
+                  data = hrs_sub, family = "binomial")
+
+summary(simple_bin2)
+```
+
+## GEE: Independence
+```{r}
+library(gee)
+gee_ind <- gee(depression ~ income + years + income*years, person_id, 
+               data = hrs_sub, family = binomial,
+               corstr = "independence")
+
+# summary
+ss_ind <- data.frame(summary(gee_ind)$coefficients)
+ss_ind <- data.frame(ss_ind, pvalue = 2 * (1 - pnorm(abs(ss_ind[,5]))))
+round(ss_ind, 4)
+```
+
+## GEE: Exchangeable
+```{r}
+gee_exch <- gee(depression ~ income + years + income*years, person_id, 
+                data = hrs_sub, family = binomial,
+                corstr = "exchangeable")
+
+# summary
+ss_exch <- data.frame(summary(gee_exch)$coefficients)
+ss_exch <- data.frame(ss_exch, pvalue = 2 * (1 - pnorm(abs(ss_exch[,5]))))
+round(ss_exch, 4)
+```
+
+## Mixed Model
+
+```{r}
+library(lme4)
+glmer <- lme4::glmer(depression ~ income + years + income*years + (1|person_id), 
+               data = hrs_sub, family = binomial)
+
+summary(glmer)
+```
 
